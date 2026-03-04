@@ -18,8 +18,16 @@
 #define PACKET_PER_HOP 3
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    fprintf(stderr, "Using: %s <host>\n", argv[0]);
+  int resolve_names = 0;
+  char *target = NULL;
+
+  if (argc == 2) {
+    target = argv[1];
+  } else if (argc == 3 && strcmp(argv[1], "-dns") == 0) {
+    resolve_names = 1;
+    target = argv[2];
+  } else {
+    fprintf(stderr, "Using: %s [-dns] <host>\n", argv[0]);
     exit(1);
   }
 
@@ -28,11 +36,11 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  printf("traceroute to %s\n", argv[1]);
+  printf("traceroute to %s\n", target);
 
-  struct hostent *host = gethostbyname(argv[1]);
+  struct hostent *host = gethostbyname(target);
   if (host == NULL) {
-    fprintf(stderr, "Not allowed host: %s\n", argv[1]);
+    fprintf(stderr, "Not allowed host: %s\n", target);
     exit(1);
   }
 
@@ -101,8 +109,10 @@ int main(int argc, char *argv[]) {
       }
 
       char hostname[NI_MAXHOST] = "";
-      getnameinfo((struct sockaddr *)&from_addr, sizeof(from_addr), hostname,
-                  sizeof(hostname), NULL, 0, 0);
+      if (resolve_names) {
+        getnameinfo((struct sockaddr *)&from_addr, sizeof(from_addr), hostname,
+                    sizeof(hostname), NULL, 0, 0);
+      }
 
       struct ip *ip = (struct ip *)buffer;
       int ip_hlen = ip->ip_hl * 4;
